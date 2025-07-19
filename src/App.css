@@ -122,45 +122,12 @@ i.fab {
   color: #ff0000;
 }
 
-/* Animations */
-@keyframes float {
-  0%,
-  100% {
-    transform: translate(-50%, -50%) translateY(0px);
-  }
-  50% {
-    transform: translate(-50%, -50%) translateY(-10px);
-  }
-}
-
-@keyframes pulse {
+/* Animations - Stable and smooth */
+@keyframes gentle-glow {
   0% {
-    transform: scale(1);
-    opacity: 0.8;
+    opacity: 0.7;
   }
   100% {
-    transform: scale(1.1);
-    opacity: 1;
-  }
-}
-
-@keyframes glow {
-  0% {
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-  }
-  100% {
-    text-shadow:
-      0 0 30px rgba(255, 255, 255, 0.6),
-      0 0 40px rgba(255, 255, 255, 0.4);
-  }
-}
-
-@keyframes pulse-text {
-  0%,
-  100% {
-    opacity: 0.8;
-  }
-  50% {
     opacity: 1;
   }
 }
