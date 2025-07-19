@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto+Mono:wght@300;400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap");
 
 *,
 *:before,
@@ -23,7 +23,6 @@ body {
   transform: translate(-50%, -50%);
   top: 50%;
   left: 50%;
-  animation: float 6s ease-in-out infinite;
 }
 .container {
   width: 320px;
@@ -56,7 +55,7 @@ body {
   bottom: 130px;
   right: -50px;
   z-index: -1;
-  animation: pulse 4s ease-in-out infinite alternate;
+  animation: gentle-glow 4s ease-in-out infinite alternate;
   filter: blur(1px);
 }
 .shape2 {
@@ -68,7 +67,7 @@ body {
   top: 100px;
   left: -50px;
   z-index: -1;
-  animation: pulse 4s ease-in-out infinite alternate-reverse;
+  animation: gentle-glow 4s ease-in-out infinite alternate-reverse;
   filter: blur(1px);
 }
 
@@ -76,35 +75,33 @@ body {
   text-align: center;
 }
 #time {
-  font-family: "Orbitron", monospace;
+  font-family: "Inter", sans-serif;
   font-size: 40px;
-  font-weight: 700;
+  font-weight: 600;
   display: inline-block;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-  letter-spacing: 2px;
-  animation: glow 2s ease-in-out infinite alternate;
+  text-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+  letter-spacing: 1px;
 }
 #day {
   position: relative;
-  font-family: "Orbitron", monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 16px;
-  font-weight: 500;
-  letter-spacing: 3px;
+  font-weight: 400;
+  letter-spacing: 2px;
   text-transform: uppercase;
   color: #e0e0e0;
   text-align: center;
   margin-bottom: 20px;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
 }
 #midday {
-  font-family: "Orbitron", monospace;
+  font-family: "Inter", sans-serif;
   display: inline-block;
   font-size: 28px;
   font-weight: 500;
   margin-left: 15px;
   color: #ff6b9d;
-  text-shadow: 0 0 15px rgba(255, 107, 157, 0.4);
-  animation: pulse-text 3s ease-in-out infinite;
+  text-shadow: 0 0 12px rgba(255, 107, 157, 0.3);
 }
 a {
   display: block;
