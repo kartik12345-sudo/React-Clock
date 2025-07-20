@@ -4,23 +4,46 @@ import "./App.css";
 const API_KEY = "9d115f522095a9e57da470ddda5386a4";
 const API_BASE = "https://api.openweathermap.org/data/2.5";
 
-// Demo data for fallback when API key is invalid
+// Popular cities for search suggestions
+const POPULAR_CITIES = [
+  { name: "New York", country: "US", state: "NY" },
+  { name: "London", country: "GB" },
+  { name: "Tokyo", country: "JP" },
+  { name: "Paris", country: "FR" },
+  { name: "Sydney", country: "AU" },
+  { name: "Dubai", country: "AE" },
+  { name: "Singapore", country: "SG" },
+  { name: "Los Angeles", country: "US", state: "CA" },
+  { name: "Berlin", country: "DE" },
+  { name: "Mumbai", country: "IN" },
+  { name: "Toronto", country: "CA" },
+  { name: "Amsterdam", country: "NL" },
+  { name: "Barcelona", country: "ES" },
+  { name: "Rome", country: "IT" },
+  { name: "Moscow", country: "RU" },
+  { name: "Seoul", country: "KR" },
+  { name: "Beijing", country: "CN" },
+  { name: "Cairo", country: "EG" },
+  { name: "São Paulo", country: "BR" },
+  { name: "Mexico City", country: "MX" },
+  { name: "Istanbul", country: "TR" },
+  { name: "Bangkok", country: "TH" },
+  { name: "Buenos Aires", country: "AR" },
+  { name: "Lagos", country: "NG" },
+  { name: "Johannesburg", country: "ZA" },
+  { name: "Delhi", country: "IN" },
+  { name: "Jakarta", country: "ID" },
+  { name: "Manila", country: "PH" },
+  { name: "Karachi", country: "PK" },
+  { name: "Shanghai", country: "CN" },
+];
+
+// Demo data for fallback
 const DEMO_WEATHER = {
   name: "Demo City",
   sys: { country: "US" },
-  main: {
-    temp: 22,
-    feels_like: 25,
-    humidity: 65,
-    pressure: 1013,
-  },
-  weather: [
-    {
-      main: "Clear",
-      description: "clear sky",
-      icon: "01d",
-    },
-  ],
+  main: { temp: 22, feels_like: 25, humidity: 65, pressure: 1013 },
+  weather: [{ main: "Clear", description: "clear sky", icon: "01d" }],
   wind: { speed: 3.5 },
   visibility: 10000,
 };
@@ -28,28 +51,28 @@ const DEMO_WEATHER = {
 const DEMO_FORECAST = [
   {
     dt_txt: "2024-01-15 12:00:00",
-    main: { temp: 22, temp_min: 18 },
-    weather: [{ icon: "01d" }],
+    main: { temp: 22, temp_min: 18, temp_max: 25 },
+    weather: [{ icon: "01d", main: "Clear" }],
   },
   {
     dt_txt: "2024-01-16 12:00:00",
-    main: { temp: 25, temp_min: 20 },
-    weather: [{ icon: "02d" }],
+    main: { temp: 25, temp_min: 20, temp_max: 28 },
+    weather: [{ icon: "02d", main: "Clouds" }],
   },
   {
     dt_txt: "2024-01-17 12:00:00",
-    main: { temp: 19, temp_min: 15 },
-    weather: [{ icon: "03d" }],
+    main: { temp: 19, temp_min: 15, temp_max: 22 },
+    weather: [{ icon: "03d", main: "Clouds" }],
   },
   {
     dt_txt: "2024-01-18 12:00:00",
-    main: { temp: 23, temp_min: 19 },
-    weather: [{ icon: "01d" }],
+    main: { temp: 23, temp_min: 19, temp_max: 26 },
+    weather: [{ icon: "01d", main: "Clear" }],
   },
   {
     dt_txt: "2024-01-19 12:00:00",
-    main: { temp: 21, temp_min: 17 },
-    weather: [{ icon: "04d" }],
+    main: { temp: 21, temp_min: 17, temp_max: 24 },
+    weather: [{ icon: "04d", main: "Clouds" }],
   },
 ];
 
@@ -57,9 +80,10 @@ function WeatherApp() {
   const [weather, setWeather] = useState(null);
   const [forecast, setForecast] = useState([]);
   const [location, setLocation] = useState("");
-  const [defaultLocation, setDefaultLocation] = useState("");
   const [loading, setLoading] = useState(true);
-  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
   const [time, setTime] = useState("");
   const [date, setDate] = useState("");
 
@@ -70,12 +94,13 @@ function WeatherApp() {
       const timeString = now.toLocaleTimeString("en-US", {
         hour: "2-digit",
         minute: "2-digit",
-        hour12: false,
+        hour12: true,
       });
       const dateString = now.toLocaleDateString("en-US", {
         weekday: "long",
         day: "numeric",
         month: "long",
+        year: "numeric",
       });
       setTime(timeString);
       setDate(dateString);
@@ -86,180 +111,8 @@ function WeatherApp() {
     return () => clearInterval(interval);
   }, []);
 
-  // Get user exact location and fetch weather
+  // Get user location
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          fetchWeatherByCoords(latitude, longitude, true);
-        },
-        () => {
-          // Default to New York if location access denied
-          fetchWeatherByCity("New York", true);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 600000 },
-      );
-    } else {
-      fetchWeatherByCity("New York", true);
-    }
-  }, []);
-
-  const fetchWeatherByCoords = async (lat, lon, isDefault = false) => {
-    try {
-      setLoading(true);
-
-      // Current weather
-      const weatherResponse = await fetch(
-        `${API_BASE}/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`,
-      );
-
-      if (!weatherResponse.ok) {
-        if (weatherResponse.status === 401) {
-          throw new Error(
-            "Invalid API key. Please check your OpenWeatherMap API key.",
-          );
-        }
-        throw new Error(
-          `Weather API error: ${weatherResponse.status} - ${weatherResponse.statusText}`,
-        );
-      }
-
-      const weatherData = await weatherResponse.json();
-
-      // 5-day forecast
-      const forecastResponse = await fetch(
-        `${API_BASE}/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`,
-      );
-
-      if (!forecastResponse.ok) {
-        if (forecastResponse.status === 401) {
-          throw new Error(
-            "Invalid API key. Please check your OpenWeatherMap API key.",
-          );
-        }
-        throw new Error(
-          `Forecast API error: ${forecastResponse.status} - ${forecastResponse.statusText}`,
-        );
-      }
-
-      const forecastData = await forecastResponse.json();
-
-      setWeather(weatherData);
-      const locationName = `${weatherData.name}, ${weatherData.sys.country}`;
-      setLocation(locationName);
-
-      if (isDefault) {
-        setDefaultLocation(locationName);
-      }
-
-      // Process forecast data (take one per day)
-      const dailyForecast = forecastData.list
-        .filter((_, index) => index % 8 === 0)
-        .slice(0, 5);
-      setForecast(dailyForecast);
-
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching weather:", error);
-
-      // Use demo data if API key is invalid
-      if (error.message.includes("Invalid API key")) {
-        setWeather(DEMO_WEATHER);
-        setLocation("Demo City, US (API Key Invalid)");
-        if (isDefault) {
-          setDefaultLocation("Demo City, US (API Key Invalid)");
-        }
-        setForecast(DEMO_FORECAST);
-      }
-
-      setLoading(false);
-    }
-  };
-
-  const fetchWeatherByCity = async (city, isDefault = false) => {
-    try {
-      setLoading(true);
-
-      const weatherResponse = await fetch(
-        `${API_BASE}/weather?q=${city}&appid=${API_KEY}&units=metric`,
-      );
-
-      if (!weatherResponse.ok) {
-        if (weatherResponse.status === 401) {
-          throw new Error(
-            "Invalid API key. Please check your OpenWeatherMap API key.",
-          );
-        }
-        throw new Error(
-          `Weather API error: ${weatherResponse.status} - ${weatherResponse.statusText}`,
-        );
-      }
-
-      const weatherData = await weatherResponse.json();
-
-      const forecastResponse = await fetch(
-        `${API_BASE}/forecast?q=${city}&appid=${API_KEY}&units=metric`,
-      );
-
-      if (!forecastResponse.ok) {
-        if (forecastResponse.status === 401) {
-          throw new Error(
-            "Invalid API key. Please check your OpenWeatherMap API key.",
-          );
-        }
-        throw new Error(
-          `Forecast API error: ${forecastResponse.status} - ${forecastResponse.statusText}`,
-        );
-      }
-
-      const forecastData = await forecastResponse.json();
-
-      setWeather(weatherData);
-      const locationName = `${weatherData.name}, ${weatherData.sys.country}`;
-      setLocation(locationName);
-
-      if (isDefault) {
-        setDefaultLocation(locationName);
-      }
-
-      const dailyForecast = forecastData.list
-        .filter((_, index) => index % 8 === 0)
-        .slice(0, 5);
-      setForecast(dailyForecast);
-
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching weather:", error);
-
-      // Use demo data if API key is invalid
-      if (error.message.includes("Invalid API key")) {
-        setWeather(DEMO_WEATHER);
-        setLocation("Demo City, US (API Key Invalid)");
-        if (isDefault) {
-          setDefaultLocation("Demo City, US (API Key Invalid)");
-        }
-        setForecast(DEMO_FORECAST);
-      }
-
-      setLoading(false);
-    }
-  };
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    const city = e.target.city.value.trim();
-    if (city) {
-      setIsSearching(true);
-      fetchWeatherByCity(city);
-      e.target.city.value = "";
-    }
-  };
-
-  const handleBackToDefault = () => {
-    setIsSearching(false);
-    setLocation(defaultLocation);
-    // Fetch weather for default location again
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -269,33 +122,159 @@ function WeatherApp() {
         () => {
           fetchWeatherByCity("New York");
         },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 600000 },
       );
     } else {
       fetchWeatherByCity("New York");
     }
+  }, []);
+
+  // Search functionality
+  useEffect(() => {
+    if (searchQuery.length > 1) {
+      const filtered = POPULAR_CITIES.filter(
+        (city) =>
+          city.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          city.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (city.state &&
+            city.state.toLowerCase().includes(searchQuery.toLowerCase())),
+      );
+      setSearchResults(filtered.slice(0, 8));
+      setShowDropdown(true);
+    } else {
+      setSearchResults([]);
+      setShowDropdown(false);
+    }
+  }, [searchQuery]);
+
+  const fetchWeatherByCoords = async (lat, lon) => {
+    try {
+      setLoading(true);
+
+      const weatherResponse = await fetch(
+        `${API_BASE}/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`,
+      );
+
+      if (!weatherResponse.ok) {
+        throw new Error(`API Error: ${weatherResponse.status}`);
+      }
+
+      const weatherData = await weatherResponse.json();
+
+      const forecastResponse = await fetch(
+        `${API_BASE}/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`,
+      );
+
+      if (!forecastResponse.ok) {
+        throw new Error(`API Error: ${forecastResponse.status}`);
+      }
+
+      const forecastData = await forecastResponse.json();
+
+      setWeather(weatherData);
+      setLocation(`${weatherData.name}, ${weatherData.sys.country}`);
+
+      const dailyForecast = forecastData.list
+        .filter((_, index) => index % 8 === 0)
+        .slice(0, 5);
+      setForecast(dailyForecast);
+
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching weather:", error);
+
+      setWeather(DEMO_WEATHER);
+      setLocation("Demo City, US (Demo Mode)");
+      setForecast(DEMO_FORECAST);
+      setLoading(false);
+    }
   };
 
-  const getWeatherIcon = (iconCode) => {
-    // Map weather codes to realistic icons
+  const fetchWeatherByCity = async (city) => {
+    try {
+      setLoading(true);
+
+      const weatherResponse = await fetch(
+        `${API_BASE}/weather?q=${city}&appid=${API_KEY}&units=metric`,
+      );
+
+      if (!weatherResponse.ok) {
+        throw new Error(`API Error: ${weatherResponse.status}`);
+      }
+
+      const weatherData = await weatherResponse.json();
+
+      const forecastResponse = await fetch(
+        `${API_BASE}/forecast?q=${city}&appid=${API_KEY}&units=metric`,
+      );
+
+      if (!forecastResponse.ok) {
+        throw new Error(`API Error: ${forecastResponse.status}`);
+      }
+
+      const forecastData = await forecastResponse.json();
+
+      setWeather(weatherData);
+      setLocation(`${weatherData.name}, ${weatherData.sys.country}`);
+
+      const dailyForecast = forecastData.list
+        .filter((_, index) => index % 8 === 0)
+        .slice(0, 5);
+      setForecast(dailyForecast);
+
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching weather:", error);
+
+      setWeather(DEMO_WEATHER);
+      setLocation("Demo City, US (Demo Mode)");
+      setForecast(DEMO_FORECAST);
+      setLoading(false);
+    }
+  };
+
+  const handleSearchInput = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleCitySelect = (city) => {
+    const cityName = city.state
+      ? `${city.name}, ${city.state}, ${city.country}`
+      : `${city.name}, ${city.country}`;
+    fetchWeatherByCity(cityName);
+    setSearchQuery("");
+    setShowDropdown(false);
+  };
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      fetchWeatherByCity(searchQuery.trim());
+      setSearchQuery("");
+      setShowDropdown(false);
+    }
+  };
+
+  const getWeatherIcon = (iconCode, isLarge = false) => {
     const iconMap = {
-      "01d": "☀️", // clear sky day
-      "01n": "🌙", // clear sky night
-      "02d": "⛅", // few clouds day
-      "02n": "☁️", // few clouds night
-      "03d": "☁️", // scattered clouds
-      "03n": "☁️", // scattered clouds
-      "04d": "☁️", // broken clouds
-      "04n": "☁️", // broken clouds
-      "09d": "🌧️", // shower rain
-      "09n": "🌧️", // shower rain
-      "10d": "🌦️", // rain day
-      "10n": "🌧️", // rain night
-      "11d": "⛈️", // thunderstorm
-      "11n": "⛈️", // thunderstorm
-      "13d": "🌨️", // snow
-      "13n": "🌨️", // snow
-      "50d": "🌫️", // mist
-      "50n": "🌫️", // mist
+      "01d": isLarge ? "☀️" : "☀️",
+      "01n": isLarge ? "🌙" : "🌙",
+      "02d": isLarge ? "⛅" : "⛅",
+      "02n": isLarge ? "☁️" : "☁️",
+      "03d": isLarge ? "☁️" : "☁️",
+      "03n": isLarge ? "☁️" : "☁️",
+      "04d": isLarge ? "☁️" : "☁️",
+      "04n": isLarge ? "☁️" : "☁️",
+      "09d": isLarge ? "🌧️" : "🌧️",
+      "09n": isLarge ? "🌧️" : "🌧️",
+      "10d": isLarge ? "🌦️" : "🌦️",
+      "10n": isLarge ? "🌧️" : "🌧️",
+      "11d": isLarge ? "⛈️" : "⛈️",
+      "11n": isLarge ? "⛈️" : "⛈️",
+      "13d": isLarge ? "🌨️" : "🌨️",
+      "13n": isLarge ? "🌨️" : "🌨️",
+      "50d": isLarge ? "🌫️" : "🌫️",
+      "50n": isLarge ? "🌫️" : "🌫️",
     };
     return iconMap[iconCode] || "☀️";
   };
@@ -311,7 +290,7 @@ function WeatherApp() {
       <div className="weather-app">
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <p className="loading-text">Getting your weather...</p>
+          <p>Loading weather data...</p>
         </div>
       </div>
     );
@@ -321,13 +300,8 @@ function WeatherApp() {
     return (
       <div className="weather-app">
         <div className="error-container">
-          <p className="error-text">Unable to load weather data</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="retry-btn"
-          >
-            Try Again
-          </button>
+          <p>Unable to load weather data</p>
+          <button onClick={() => window.location.reload()}>Try Again</button>
         </div>
       </div>
     );
@@ -336,15 +310,27 @@ function WeatherApp() {
   return (
     <div className="weather-app">
       <div className="weather-container">
-        {/* Header with Time and Location */}
+        {/* Header */}
         <header className="header">
-          <div className="time-date">
-            <h1 className="current-time">{time}</h1>
+          <div className="location-info">
+            <h1 className="current-location">{location.split(",")[0]}</h1>
             <p className="current-date">{date}</p>
           </div>
-          <div className="location-section">
-            {isSearching && (
-              <button onClick={handleBackToDefault} className="back-btn">
+          <div className="current-time">{time}</div>
+        </header>
+
+        {/* Search Section */}
+        <div className="search-section">
+          <form onSubmit={handleSearchSubmit} className="search-form">
+            <div className="search-input-container">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={handleSearchInput}
+                placeholder="Search for cities..."
+                className="search-input"
+              />
+              <button type="submit" className="search-btn">
                 <svg
                   width="20"
                   height="20"
@@ -353,111 +339,141 @@ function WeatherApp() {
                 >
                   <path
                     fillRule="evenodd"
-                    d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                    d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
                     clipRule="evenodd"
                   />
                 </svg>
               </button>
-            )}
-            <h2 className="location">{location.split(",")[0]}</h2>
-          </div>
-        </header>
-
-        {/* Search Bar */}
-        <form className="search-form" onSubmit={handleSearch}>
-          <input
-            type="text"
-            name="city"
-            placeholder="Search for a city..."
-            className="search-input"
-          />
-          <button type="submit" className="search-btn">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
-        </form>
-
-        {/* Main Content */}
-        <div className="main-content">
-          {/* Current Weather */}
-          <div className="current-weather">
-            <div className="weather-icon-main">
-              <span className="icon">
-                {getWeatherIcon(weather.weather[0].icon)}
-              </span>
             </div>
+          </form>
+
+          {/* Search Dropdown */}
+          {showDropdown && searchResults.length > 0 && (
+            <div className="search-dropdown">
+              {searchResults.map((city, index) => (
+                <div
+                  key={index}
+                  className="search-result-item"
+                  onClick={() => handleCitySelect(city)}
+                >
+                  <div className="city-info">
+                    <span className="city-name">{city.name}</span>
+                    <span className="city-details">
+                      {city.state
+                        ? `${city.state}, ${city.country}`
+                        : city.country}
+                    </span>
+                  </div>
+                  <svg
+                    width="16"
+                    height="16"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Main Weather Card */}
+        <div className="main-weather-card">
+          <div className="weather-main-content">
+            <div className="weather-icon-section">
+              <div className="main-weather-icon">
+                {getWeatherIcon(weather.weather[0].icon, true)}
+              </div>
+              <div className="weather-description">
+                <h2 className="weather-condition">{weather.weather[0].main}</h2>
+                <p className="weather-detail">
+                  {weather.weather[0].description}
+                </p>
+              </div>
+            </div>
+
             <div className="temperature-section">
-              <span className="temperature">
+              <span className="main-temperature">
                 {Math.round(weather.main.temp)}°
               </span>
-              <div className="weather-info">
-                <h3 className="weather-condition">{weather.weather[0].main}</h3>
+              <div className="temp-details">
                 <p className="feels-like">
-                  Feels like {Math.round(weather.main.feels_like)}°
+                  Feels like {Math.round(weather.main.feels_like)}°C
                 </p>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Weather Details */}
-          <div className="weather-details">
-            <div className="detail-item">
-              <span className="detail-icon">🌬️</span>
-              <div className="detail-info">
-                <span className="detail-label">Wind</span>
-                <span className="detail-value">{weather.wind.speed} m/s</span>
-              </div>
-            </div>
-            <div className="detail-item">
-              <span className="detail-icon">💧</span>
-              <div className="detail-info">
-                <span className="detail-label">Humidity</span>
-                <span className="detail-value">{weather.main.humidity}%</span>
-              </div>
-            </div>
-            <div className="detail-item">
-              <span className="detail-icon">👀</span>
-              <div className="detail-info">
-                <span className="detail-label">Visibility</span>
-                <span className="detail-value">
-                  {Math.round(weather.visibility / 1000)} km
-                </span>
-              </div>
-            </div>
-            <div className="detail-item">
-              <span className="detail-icon">🌡️</span>
-              <div className="detail-info">
-                <span className="detail-label">Pressure</span>
-                <span className="detail-value">
-                  {weather.main.pressure} hPa
-                </span>
-              </div>
+        {/* Weather Stats Grid */}
+        <div className="weather-stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon">🌬️</div>
+            <div className="stat-info">
+              <span className="stat-value">{weather.wind.speed}</span>
+              <span className="stat-unit">m/s</span>
+              <span className="stat-label">Wind Speed</span>
             </div>
           </div>
 
-          {/* 7-Day Forecast */}
-          <div className="forecast-section">
-            <h3 className="forecast-title">5-Day Forecast</h3>
-            <div className="forecast-list">
-              {forecast.map((day, index) => (
-                <div key={index} className="forecast-item">
-                  <span className="forecast-day">
-                    {index === 0 ? "Today" : getDayName(day.dt_txt)}
-                  </span>
-                  <span className="forecast-icon">
-                    {getWeatherIcon(day.weather[0].icon)}
-                  </span>
-                  <span className="forecast-temp">
+          <div className="stat-card">
+            <div className="stat-icon">💧</div>
+            <div className="stat-info">
+              <span className="stat-value">{weather.main.humidity}</span>
+              <span className="stat-unit">%</span>
+              <span className="stat-label">Humidity</span>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon">👀</div>
+            <div className="stat-info">
+              <span className="stat-value">
+                {Math.round(weather.visibility / 1000)}
+              </span>
+              <span className="stat-unit">km</span>
+              <span className="stat-label">Visibility</span>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon">🌡️</div>
+            <div className="stat-info">
+              <span className="stat-value">{weather.main.pressure}</span>
+              <span className="stat-unit">hPa</span>
+              <span className="stat-label">Pressure</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 5-Day Forecast */}
+        <div className="forecast-container">
+          <h3 className="forecast-title">5-Day Forecast</h3>
+          <div className="forecast-cards">
+            {forecast.map((day, index) => (
+              <div key={index} className="forecast-card">
+                <div className="forecast-day">
+                  {index === 0 ? "Today" : getDayName(day.dt_txt)}
+                </div>
+                <div className="forecast-icon">
+                  {getWeatherIcon(day.weather[0].icon)}
+                </div>
+                <div className="forecast-temps">
+                  <span className="forecast-high">
                     {Math.round(day.main.temp)}°
                   </span>
+                  <span className="forecast-low">
+                    {Math.round(day.main.temp_min)}°
+                  </span>
                 </div>
-              ))}
-            </div>
+                <div className="forecast-condition">{day.weather[0].main}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
