@@ -155,6 +155,14 @@ function WeatherApp() {
       setLoading(false);
     } catch (error) {
       console.error("Error fetching weather:", error);
+
+      // Use demo data if API key is invalid
+      if (error.message.includes("Invalid API key")) {
+        setWeather(DEMO_WEATHER);
+        setLocation("Demo City, US (API Key Invalid)");
+        setForecast(DEMO_FORECAST);
+      }
+
       setLoading(false);
     }
   };
@@ -208,6 +216,14 @@ function WeatherApp() {
       setLoading(false);
     } catch (error) {
       console.error("Error fetching weather:", error);
+
+      // Use demo data if API key is invalid
+      if (error.message.includes("Invalid API key")) {
+        setWeather(DEMO_WEATHER);
+        setLocation("Demo City, US (API Key Invalid)");
+        setForecast(DEMO_FORECAST);
+      }
+
       setLoading(false);
     }
   };
