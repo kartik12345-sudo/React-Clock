@@ -4,6 +4,55 @@ import "./App.css";
 const API_KEY = "9d115f522095a9e57da470ddda5386a4";
 const API_BASE = "https://api.openweathermap.org/data/2.5";
 
+// Demo data for fallback when API key is invalid
+const DEMO_WEATHER = {
+  name: "Demo City",
+  sys: { country: "US" },
+  main: {
+    temp: 22,
+    feels_like: 25,
+    humidity: 65,
+    pressure: 1013,
+  },
+  weather: [
+    {
+      main: "Clear",
+      description: "clear sky",
+      icon: "01d",
+    },
+  ],
+  wind: { speed: 3.5 },
+  visibility: 10000,
+};
+
+const DEMO_FORECAST = [
+  {
+    dt_txt: "2024-01-15 12:00:00",
+    main: { temp: 22, temp_min: 18 },
+    weather: [{ icon: "01d" }],
+  },
+  {
+    dt_txt: "2024-01-16 12:00:00",
+    main: { temp: 25, temp_min: 20 },
+    weather: [{ icon: "02d" }],
+  },
+  {
+    dt_txt: "2024-01-17 12:00:00",
+    main: { temp: 19, temp_min: 15 },
+    weather: [{ icon: "03d" }],
+  },
+  {
+    dt_txt: "2024-01-18 12:00:00",
+    main: { temp: 23, temp_min: 19 },
+    weather: [{ icon: "01d" }],
+  },
+  {
+    dt_txt: "2024-01-19 12:00:00",
+    main: { temp: 21, temp_min: 17 },
+    weather: [{ icon: "04d" }],
+  },
+];
+
 function WeatherApp() {
   const [weather, setWeather] = useState(null);
   const [forecast, setForecast] = useState([]);
