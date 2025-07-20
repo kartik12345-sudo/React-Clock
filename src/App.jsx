@@ -64,7 +64,14 @@ function WeatherApp() {
       );
 
       if (!weatherResponse.ok) {
-        throw new Error(`Weather API error: ${weatherResponse.status}`);
+        if (weatherResponse.status === 401) {
+          throw new Error(
+            "Invalid API key. Please check your OpenWeatherMap API key.",
+          );
+        }
+        throw new Error(
+          `Weather API error: ${weatherResponse.status} - ${weatherResponse.statusText}`,
+        );
       }
 
       const weatherData = await weatherResponse.json();
@@ -75,7 +82,14 @@ function WeatherApp() {
       );
 
       if (!forecastResponse.ok) {
-        throw new Error(`Forecast API error: ${forecastResponse.status}`);
+        if (forecastResponse.status === 401) {
+          throw new Error(
+            "Invalid API key. Please check your OpenWeatherMap API key.",
+          );
+        }
+        throw new Error(
+          `Forecast API error: ${forecastResponse.status} - ${forecastResponse.statusText}`,
+        );
       }
 
       const forecastData = await forecastResponse.json();
@@ -105,7 +119,14 @@ function WeatherApp() {
       );
 
       if (!weatherResponse.ok) {
-        throw new Error(`Weather API error: ${weatherResponse.status}`);
+        if (weatherResponse.status === 401) {
+          throw new Error(
+            "Invalid API key. Please check your OpenWeatherMap API key.",
+          );
+        }
+        throw new Error(
+          `Weather API error: ${weatherResponse.status} - ${weatherResponse.statusText}`,
+        );
       }
 
       const weatherData = await weatherResponse.json();
@@ -115,7 +136,14 @@ function WeatherApp() {
       );
 
       if (!forecastResponse.ok) {
-        throw new Error(`Forecast API error: ${forecastResponse.status}`);
+        if (forecastResponse.status === 401) {
+          throw new Error(
+            "Invalid API key. Please check your OpenWeatherMap API key.",
+          );
+        }
+        throw new Error(
+          `Forecast API error: ${forecastResponse.status} - ${forecastResponse.statusText}`,
+        );
       }
 
       const forecastData = await forecastResponse.json();
