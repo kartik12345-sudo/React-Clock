@@ -324,10 +324,9 @@ function WeatherApp() {
         <div className="main-weather-card">
           <div className="main-weather-info">
             <div className="weather-icon-main">
-              <img
-                src={getWeatherIcon(weather.weather[0].icon)}
-                alt={weather.weather[0].description}
-              />
+              <span style={{ fontSize: "60px" }}>
+                {getWeatherIcon(weather.weather[0].icon)}
+              </span>
             </div>
             <div className="temperature-main">
               <span className="temp-value">
