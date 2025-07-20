@@ -551,6 +551,13 @@ function WeatherApp() {
     }
   }, [searchQuery]);
 
+    // Update local time every second
+  useEffect(() => {
+    updateLocalTime(); // Initial time
+    const timeInterval = setInterval(updateLocalTime, 1000);
+    return () => clearInterval(timeInterval);
+  }, []);
+
   // Get current location on load
   useEffect(() => {
     if (navigator.geolocation) {
@@ -683,7 +690,7 @@ function WeatherApp() {
       "04d": "☁️",
       "04n": "☁️",
       "09d": "🌧️",
-      "09n": "🌧️",
+      "09n": "����️",
       "10d": "🌦️",
       "10n": "🌧️",
       "11d": "⛈️",
