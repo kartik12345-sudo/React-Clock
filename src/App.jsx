@@ -605,10 +605,39 @@ function WeatherApp() {
 
   const fetchTimeForCity = async (city) => {
     try {
-      const response = await fetch(`${TIMEZONE_API}/${city.timezone}`);
+      // First try the WorldTimeAPI (may fail due to CORS in dev environment)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+
+      const response = await fetch(`${TIMEZONE_API}/${city.timezone}`, {
+        signal: controller.signal,
+        mode: "cors",
+      });
+
+      clearTimeout(timeoutId);
+
       if (response.ok) {
         const data = await response.json();
         const time = new Date(data.datetime).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        });
+        setCurrentTime(time);
+        return;
+      }
+    } catch (error) {
+      console.log("WorldTimeAPI not available, using fallback calculation");
+    }
+
+    // Fallback: Calculate time using timezone offset
+    try {
+      const offset = TIMEZONE_OFFSETS[city.timezone];
+      if (offset !== undefined) {
+        const now = new Date();
+        const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+        const localTime = new Date(utc + offset * 3600000);
+        const time = localTime.toLocaleTimeString("en-US", {
           hour: "2-digit",
           minute: "2-digit",
           hour12: true,
@@ -618,7 +647,7 @@ function WeatherApp() {
         setCurrentTime("Time unavailable");
       }
     } catch (error) {
-      console.error("Error fetching time:", error);
+      console.error("Error calculating time:", error);
       setCurrentTime("Time unavailable");
     }
   };
