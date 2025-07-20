@@ -103,11 +103,21 @@ function WeatherApp() {
       const weatherResponse = await fetch(
         `${API_BASE}/weather?q=${city}&appid=${API_KEY}&units=metric`,
       );
+
+      if (!weatherResponse.ok) {
+        throw new Error(`Weather API error: ${weatherResponse.status}`);
+      }
+
       const weatherData = await weatherResponse.json();
 
       const forecastResponse = await fetch(
         `${API_BASE}/forecast?q=${city}&appid=${API_KEY}&units=metric`,
       );
+
+      if (!forecastResponse.ok) {
+        throw new Error(`Forecast API error: ${forecastResponse.status}`);
+      }
+
       const forecastData = await forecastResponse.json();
 
       setWeather(weatherData);
