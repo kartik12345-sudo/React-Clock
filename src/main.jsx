@@ -1,9 +1,9 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import Clock from './App.jsx'; // Correct import
+import React from "react";
+import ReactDOM from "react-dom/client";
+import WeatherApp from "./App.jsx";
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <Clock />
-  </React.StrictMode>
+    <WeatherApp />
+  </React.StrictMode>,
 );
