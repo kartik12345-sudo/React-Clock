@@ -62,12 +62,22 @@ function WeatherApp() {
       const weatherResponse = await fetch(
         `${API_BASE}/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`,
       );
+
+      if (!weatherResponse.ok) {
+        throw new Error(`Weather API error: ${weatherResponse.status}`);
+      }
+
       const weatherData = await weatherResponse.json();
 
       // 5-day forecast
       const forecastResponse = await fetch(
         `${API_BASE}/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`,
       );
+
+      if (!forecastResponse.ok) {
+        throw new Error(`Forecast API error: ${forecastResponse.status}`);
+      }
+
       const forecastData = await forecastResponse.json();
 
       setWeather(weatherData);
