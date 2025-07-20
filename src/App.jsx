@@ -388,10 +388,9 @@ function WeatherApp() {
                   {index === 0 ? "Today" : getDayName(day.dt_txt)}
                 </div>
                 <div className="forecast-icon">
-                  <img
-                    src={getWeatherIcon(day.weather[0].icon)}
-                    alt={day.weather[0].description}
-                  />
+                  <span style={{ fontSize: "28px" }}>
+                    {getWeatherIcon(day.weather[0].icon)}
+                  </span>
                 </div>
                 <div className="forecast-temps">
                   <span className="forecast-high">
