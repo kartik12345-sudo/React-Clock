@@ -653,7 +653,7 @@ function WeatherApp() {
         const data = await response.json();
         setWeather(data);
         setLocation(`${data.name}, ${data.sys.country}`);
-        await fetchTimeForCity(city);
+                // Time is now handled by local computer time
       } else {
         throw new Error(`Weather API error: ${response.status}`);
       }
