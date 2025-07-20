@@ -675,18 +675,30 @@ function WeatherApp() {
     setLoading(true);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
       const response = await fetch(
         `${API_BASE}/weather?q=${city.name},${city.country}&appid=${API_KEY}&units=metric`,
+        { signal: controller.signal },
       );
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
         setWeather(data);
         setLocation(`${data.name}, ${data.sys.country}`);
         await fetchTimeForCity(city);
+      } else {
+        throw new Error(`Weather API error: ${response.status}`);
       }
     } catch (error) {
       console.error("Error fetching weather:", error);
+
+      if (error.name === "AbortError") {
+        console.log("Weather request timed out");
+      }
     }
 
     setLoading(false);
