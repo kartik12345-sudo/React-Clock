@@ -349,7 +349,7 @@ function WeatherApp() {
         {/* Weather Stats */}
         <div className="weather-stats">
           <div className="stat-item">
-            <div className="stat-icon">💨</div>
+            <div className="stat-icon">🌬️</div>
             <div className="stat-info">
               <span className="stat-label">Wind</span>
               <span className="stat-value">{weather.wind.speed} m/s</span>
@@ -363,7 +363,7 @@ function WeatherApp() {
             </div>
           </div>
           <div className="stat-item">
-            <div className="stat-icon">👁️</div>
+            <div className="stat-icon">👀</div>
             <div className="stat-info">
               <span className="stat-label">Visibility</span>
               <span className="stat-value">{weather.visibility / 1000} km</span>
