@@ -816,10 +816,10 @@ function WeatherApp() {
                   </div>
 
                   <div className="weather-details">
-                    <div className="detail-item">
+                                        <div className="detail-item">
                       <span className="detail-label">Humidity</span>
                       <span className="detail-value">
-                        {weather.main.humidity}%
+                        {weather.main.humidity} %
                       </span>
                     </div>
                     <div className="detail-item">
