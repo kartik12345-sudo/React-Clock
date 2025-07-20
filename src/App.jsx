@@ -57,7 +57,9 @@ function WeatherApp() {
   const [weather, setWeather] = useState(null);
   const [forecast, setForecast] = useState([]);
   const [location, setLocation] = useState("");
+  const [defaultLocation, setDefaultLocation] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   const [time, setTime] = useState("");
   const [date, setDate] = useState("");
 
@@ -68,13 +70,12 @@ function WeatherApp() {
       const timeString = now.toLocaleTimeString("en-US", {
         hour: "2-digit",
         minute: "2-digit",
-        hour12: true,
+        hour12: false,
       });
       const dateString = now.toLocaleDateString("en-US", {
         weekday: "long",
-        year: "numeric",
-        month: "long",
         day: "numeric",
+        month: "long",
       });
       setTime(timeString);
       setDate(dateString);
@@ -85,25 +86,26 @@ function WeatherApp() {
     return () => clearInterval(interval);
   }, []);
 
-  // Get user location and fetch weather
+  // Get user exact location and fetch weather
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          fetchWeatherByCoords(latitude, longitude);
+          fetchWeatherByCoords(latitude, longitude, true);
         },
         () => {
           // Default to New York if location access denied
-          fetchWeatherByCity("New York");
+          fetchWeatherByCity("New York", true);
         },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 600000 },
       );
     } else {
-      fetchWeatherByCity("New York");
+      fetchWeatherByCity("New York", true);
     }
   }, []);
 
-  const fetchWeatherByCoords = async (lat, lon) => {
+  const fetchWeatherByCoords = async (lat, lon, isDefault = false) => {
     try {
       setLoading(true);
 
@@ -144,7 +146,12 @@ function WeatherApp() {
       const forecastData = await forecastResponse.json();
 
       setWeather(weatherData);
-      setLocation(`${weatherData.name}, ${weatherData.sys.country}`);
+      const locationName = `${weatherData.name}, ${weatherData.sys.country}`;
+      setLocation(locationName);
+
+      if (isDefault) {
+        setDefaultLocation(locationName);
+      }
 
       // Process forecast data (take one per day)
       const dailyForecast = forecastData.list
@@ -160,6 +167,9 @@ function WeatherApp() {
       if (error.message.includes("Invalid API key")) {
         setWeather(DEMO_WEATHER);
         setLocation("Demo City, US (API Key Invalid)");
+        if (isDefault) {
+          setDefaultLocation("Demo City, US (API Key Invalid)");
+        }
         setForecast(DEMO_FORECAST);
       }
 
@@ -167,7 +177,7 @@ function WeatherApp() {
     }
   };
 
-  const fetchWeatherByCity = async (city) => {
+  const fetchWeatherByCity = async (city, isDefault = false) => {
     try {
       setLoading(true);
 
@@ -206,7 +216,12 @@ function WeatherApp() {
       const forecastData = await forecastResponse.json();
 
       setWeather(weatherData);
-      setLocation(`${weatherData.name}, ${weatherData.sys.country}`);
+      const locationName = `${weatherData.name}, ${weatherData.sys.country}`;
+      setLocation(locationName);
+
+      if (isDefault) {
+        setDefaultLocation(locationName);
+      }
 
       const dailyForecast = forecastData.list
         .filter((_, index) => index % 8 === 0)
@@ -221,6 +236,9 @@ function WeatherApp() {
       if (error.message.includes("Invalid API key")) {
         setWeather(DEMO_WEATHER);
         setLocation("Demo City, US (API Key Invalid)");
+        if (isDefault) {
+          setDefaultLocation("Demo City, US (API Key Invalid)");
+        }
         setForecast(DEMO_FORECAST);
       }
 
@@ -232,8 +250,28 @@ function WeatherApp() {
     e.preventDefault();
     const city = e.target.city.value.trim();
     if (city) {
+      setIsSearching(true);
       fetchWeatherByCity(city);
       e.target.city.value = "";
+    }
+  };
+
+  const handleBackToDefault = () => {
+    setIsSearching(false);
+    setLocation(defaultLocation);
+    // Fetch weather for default location again
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          fetchWeatherByCoords(latitude, longitude);
+        },
+        () => {
+          fetchWeatherByCity("New York");
+        },
+      );
+    } else {
+      fetchWeatherByCity("New York");
     }
   };
 
@@ -271,9 +309,9 @@ function WeatherApp() {
   if (loading) {
     return (
       <div className="weather-app">
-        <div className="loading">
+        <div className="loading-container">
           <div className="loading-spinner"></div>
-          <p>Loading weather data...</p>
+          <p className="loading-text">Getting your weather...</p>
         </div>
       </div>
     );
@@ -282,8 +320,14 @@ function WeatherApp() {
   if (!weather) {
     return (
       <div className="weather-app">
-        <div className="error">
-          <p>Unable to load weather data</p>
+        <div className="error-container">
+          <p className="error-text">Unable to load weather data</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="retry-btn"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -292,16 +336,34 @@ function WeatherApp() {
   return (
     <div className="weather-app">
       <div className="weather-container">
-        {/* Header */}
-        <header className="app-header">
-          <div className="location-info">
-            <h1 className="location">{location}</h1>
+        {/* Header with Time and Location */}
+        <header className="header">
+          <div className="time-date">
+            <h1 className="current-time">{time}</h1>
             <p className="current-date">{date}</p>
           </div>
-          <div className="current-time">{time}</div>
+          <div className="location-section">
+            {isSearching && (
+              <button onClick={handleBackToDefault} className="back-btn">
+                <svg
+                  width="20"
+                  height="20"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            )}
+            <h2 className="location">{location.split(",")[0]}</h2>
+          </div>
         </header>
 
-        {/* Search */}
+        {/* Search Bar */}
         <form className="search-form" onSubmit={handleSearch}>
           <input
             type="text"
@@ -320,88 +382,82 @@ function WeatherApp() {
           </button>
         </form>
 
-        {/* Main Weather Card */}
-        <div className="main-weather-card">
-          <div className="main-weather-info">
+        {/* Main Content */}
+        <div className="main-content">
+          {/* Current Weather */}
+          <div className="current-weather">
             <div className="weather-icon-main">
-              <span style={{ fontSize: "60px" }}>
+              <span className="icon">
                 {getWeatherIcon(weather.weather[0].icon)}
               </span>
             </div>
-            <div className="temperature-main">
-              <span className="temp-value">
-                {Math.round(weather.main.temp)}
+            <div className="temperature-section">
+              <span className="temperature">
+                {Math.round(weather.main.temp)}°
               </span>
-              <span className="temp-unit">°C</span>
+              <div className="weather-info">
+                <h3 className="weather-condition">{weather.weather[0].main}</h3>
+                <p className="feels-like">
+                  Feels like {Math.round(weather.main.feels_like)}°
+                </p>
+              </div>
             </div>
           </div>
+
+          {/* Weather Details */}
           <div className="weather-details">
-            <h3 className="weather-condition">{weather.weather[0].main}</h3>
-            <p className="weather-description">
-              {weather.weather[0].description}
-            </p>
-            <div className="feels-like">
-              Feels like {Math.round(weather.main.feels_like)}°C
+            <div className="detail-item">
+              <span className="detail-icon">🌬️</span>
+              <div className="detail-info">
+                <span className="detail-label">Wind</span>
+                <span className="detail-value">{weather.wind.speed} m/s</span>
+              </div>
+            </div>
+            <div className="detail-item">
+              <span className="detail-icon">💧</span>
+              <div className="detail-info">
+                <span className="detail-label">Humidity</span>
+                <span className="detail-value">{weather.main.humidity}%</span>
+              </div>
+            </div>
+            <div className="detail-item">
+              <span className="detail-icon">👀</span>
+              <div className="detail-info">
+                <span className="detail-label">Visibility</span>
+                <span className="detail-value">
+                  {Math.round(weather.visibility / 1000)} km
+                </span>
+              </div>
+            </div>
+            <div className="detail-item">
+              <span className="detail-icon">🌡️</span>
+              <div className="detail-info">
+                <span className="detail-label">Pressure</span>
+                <span className="detail-value">
+                  {weather.main.pressure} hPa
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Weather Stats */}
-        <div className="weather-stats">
-          <div className="stat-item">
-            <div className="stat-icon">🌬️</div>
-            <div className="stat-info">
-              <span className="stat-label">Wind</span>
-              <span className="stat-value">{weather.wind.speed} m/s</span>
-            </div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-icon">💧</div>
-            <div className="stat-info">
-              <span className="stat-label">Humidity</span>
-              <span className="stat-value">{weather.main.humidity}%</span>
-            </div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-icon">👀</div>
-            <div className="stat-info">
-              <span className="stat-label">Visibility</span>
-              <span className="stat-value">{weather.visibility / 1000} km</span>
-            </div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-icon">🌡️</div>
-            <div className="stat-info">
-              <span className="stat-label">Pressure</span>
-              <span className="stat-value">{weather.main.pressure} hPa</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 5-Day Forecast */}
-        <div className="forecast-section">
-          <h3 className="forecast-title">5-Day Forecast</h3>
-          <div className="forecast-list">
-            {forecast.map((day, index) => (
-              <div key={index} className="forecast-item">
-                <div className="forecast-day">
-                  {index === 0 ? "Today" : getDayName(day.dt_txt)}
-                </div>
-                <div className="forecast-icon">
-                  <span style={{ fontSize: "28px" }}>
+          {/* 7-Day Forecast */}
+          <div className="forecast-section">
+            <h3 className="forecast-title">5-Day Forecast</h3>
+            <div className="forecast-list">
+              {forecast.map((day, index) => (
+                <div key={index} className="forecast-item">
+                  <span className="forecast-day">
+                    {index === 0 ? "Today" : getDayName(day.dt_txt)}
+                  </span>
+                  <span className="forecast-icon">
                     {getWeatherIcon(day.weather[0].icon)}
                   </span>
-                </div>
-                <div className="forecast-temps">
-                  <span className="forecast-high">
+                  <span className="forecast-temp">
                     {Math.round(day.main.temp)}°
                   </span>
-                  <span className="forecast-low">
-                    {Math.round(day.main.temp_min)}°
-                  </span>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
