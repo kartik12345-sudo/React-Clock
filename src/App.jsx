@@ -604,11 +604,7 @@ function WeatherApp() {
           (city) => city.name.toLowerCase() === data.name.toLowerCase(),
         );
 
-        if (cityMatch) {
-          await fetchTimeForCity(cityMatch);
-        } else {
-          setCurrentTime("Time unavailable");
-        }
+                // Time is now handled by local computer time
       } else {
         throw new Error(`Weather API error: ${response.status}`);
       }
